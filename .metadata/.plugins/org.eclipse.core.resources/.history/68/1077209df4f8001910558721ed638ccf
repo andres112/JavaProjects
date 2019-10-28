@@ -1,0 +1,312 @@
+package firsttest;
+
+import java.nio.charset.Charset;
+import java.util.Random;
+import java.util.TreeMap;
+
+public class FirstTest {
+
+    // General configuration
+    // NUMBER_OF_ELEMENTS: The quantity of elements to generate randomly and put in the hashmap.
+    // NUMBER_OF_QUERIES: The quantity of queries that getByOne_Benchmark and removeByOne_Benchmark functions execute with randomly keys.
+    static final long NUMBER_OF_ELEMENTS = 1000000;
+    static final int NUMBER_OF_QUERIES = 100000;
+    
+    // Specific Configuration 
+    // XX_MAXLENGTH: Max length allowed to put elements, after that, the algortihm remove randomly elements to add the new one.
+    //               When this parameter is 0 means without limit
+    // XX_REDUNDANCY: The number of tries that the set_Benchmark should attemp to add a key/value if this already exists
+    // XX_REMOVE_PER: The percentage of elements to remove accoriding to the hashmap object size (not the XX_MAXLENGTH)
+    //                The value should be between 0 and 100
+    static final long CH_MAX_LENGTH = 5000;
+    static final int CH_REDUNDANCY = 0;
+    static final int CH_REMOVE_PER = 0;
+    static final long IH_MAX_LENGTH = 5000;
+    static final int IH_REDUNDANCY = 0;
+    static final int IH_REMOVE_PER = 0;
+    static final long WH_MAX_LENGTH = 5000;
+    static final int WH_REDUNDANCY = 0;
+    static final int WH_REMOVE_PER  = 0;
+
+    // Benchmark variables
+    private long startTime, entTime, totalTime;
+    // Object that will keep the results
+    private final TreeMap<String, Object[]> results = new TreeMap<>();
+
+    //Main execution
+    public static void main(String[] args) {
+
+        // Instance of test class for execution
+        FirstTest test = new FirstTest();
+
+        // Creation of instance to each hashmap object
+        // Execution of methods to gauge the benchmarks
+        ConcurrentHash c_table = new ConcurrentHash(CH_MAX_LENGTH);
+
+        test.set_Benchmark(c_table, CH_REDUNDANCY);
+        test.getByOne_Benchmark(c_table);
+        test.getAll_Benchmark(c_table);
+        test.removeByOne_Benchmark(c_table);
+        test.removeByPercentage_Benchmark(c_table, CH_REMOVE_PER);
+
+        IdentityHash i_table = new IdentityHash(IH_MAX_LENGTH);
+
+        test.set_Benchmark(i_table, IH_REDUNDANCY);
+        test.getByOne_Benchmark(i_table);
+        test.getAll_Benchmark(i_table);
+        test.removeByOne_Benchmark(i_table);
+        test.removeByPercentage_Benchmark(i_table, IH_REMOVE_PER);
+
+        WeakHash w_table = new WeakHash(WH_MAX_LENGTH);
+
+        test.set_Benchmark(w_table, WH_REDUNDANCY);
+        test.getByOne_Benchmark(w_table);
+        test.getAll_Benchmark(w_table);
+        test.removeByOne_Benchmark(w_table);
+        test.removeByPercentage_Benchmark(w_table, WH_REMOVE_PER);
+
+        // Print the results of the whole test
+        test.printResults();
+    }
+
+    // Method to get string randomly
+    private String get_RandomString(int len) {
+        byte[] array = new byte[len];
+        new Random().nextBytes(array);
+        String generatedString = new String(array, Charset.forName("UTF-8"));
+        return generatedString;
+    }
+
+    // Method to set the elements in the hashmap
+    public void set_Benchmark(Object hashmap, int r) {
+        long finalLen = 0;
+        System.out.println("Starting: Creating: " + hashmap.getClass().toString() + " - Redundance: " + r);
+        startTime = System.nanoTime();
+        try {
+            int ctrl = 0;
+            for (int i = 0; i < NUMBER_OF_ELEMENTS; i++) {
+                Object key = (long) (Math.random() * NUMBER_OF_ELEMENTS);
+                Object value = get_RandomString(5);
+                if (hashmap instanceof ConcurrentHash) {
+                    ConcurrentHash hashMap = (ConcurrentHash) hashmap;
+                    if (hashMap.containsKey(key) && ctrl < r) {
+                        i--;
+                        ctrl++;
+                    } else {
+                        hashMap.put(key, value);
+                        ctrl = 0;
+                    }
+                    finalLen = hashMap.getSize();
+                }
+                if (hashmap instanceof IdentityHash) {
+                    IdentityHash hashMap = (IdentityHash) hashmap;
+                    if (hashMap.containsKey(key) && ctrl < r) {
+                        i--;
+                        ctrl++;
+                    } else {
+                        hashMap.put(key, value);
+                        ctrl = 0;
+                    }
+                    finalLen = hashMap.getSize();
+                }
+                if (hashmap instanceof WeakHash) {
+                    WeakHash hashMap = (WeakHash) hashmap;
+                    if (hashMap.containsKey(key) && ctrl < r) {
+                        i--;
+                        ctrl++;
+                    } else {
+                        hashMap.put(key, value);
+                        ctrl = 0;
+                    }
+                    finalLen = hashMap.getSize();
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("Error: " + e);
+        }
+        entTime = System.nanoTime();
+        totalTime = (entTime - startTime) / 1000000L;
+        this.results.put(hashmap.getClass().toString() + "/create", new Object[]{totalTime,"NA", finalLen, "NA", r});
+        System.out.println("Executed in in " + totalTime + " ms \n***********************\n");
+    }
+
+    // Method to get all elements of the hashmap
+    public void getAll_Benchmark(Object hashmap) {
+        System.out.println("Starting: Iterating: " + hashmap.getClass().toString());
+        startTime = System.nanoTime();
+        try {
+            if (hashmap instanceof ConcurrentHash) {
+                ConcurrentHash hashMap = (ConcurrentHash) hashmap;
+                hashMap.getAll();
+            }
+            if (hashmap instanceof IdentityHash) {
+                IdentityHash hashMap = (IdentityHash) hashmap;
+                hashMap.getAll();
+            }
+            if (hashmap instanceof WeakHash) {
+                WeakHash hashMap = (WeakHash) hashmap;
+                hashMap.getAll();
+            }
+        } catch (Exception e) {
+            System.out.println("Error: " + e);
+        }
+        entTime = System.nanoTime();
+        totalTime = (entTime - startTime) / 1000L;
+        this.results.put(hashmap.getClass().toString() + "/getAll", new Object[]{totalTime, "NA", "NA", "NA"});
+        System.out.println("Executed in in " + totalTime + " us \n***********************\n");
+    }
+
+    // Method to get elements from the hashmap random keys
+    public void getByOne_Benchmark(Object hashmap) {
+        System.out.println("Starting: Getting By One: " + hashmap.getClass().toString());
+        int ctr = 0;
+        startTime = System.nanoTime();
+        try {
+
+            for (int i = 0; i < NUMBER_OF_QUERIES; i++) {
+                Object key = (long) (Math.random() * NUMBER_OF_ELEMENTS);
+                if (hashmap instanceof ConcurrentHash) {
+                    ConcurrentHash hashMap = (ConcurrentHash) hashmap;
+                    Object value = hashMap.get(key);
+                    if (value != null) {
+                        ctr++;
+                    }
+                }
+                if (hashmap instanceof IdentityHash) {
+                    IdentityHash hashMap = (IdentityHash) hashmap;
+                    Object value = hashMap.get(key);
+                    if (value != null) {
+                        ctr++;
+                    }
+                }
+                if (hashmap instanceof WeakHash) {
+                    WeakHash hashMap = (WeakHash) hashmap;
+                    Object value = hashMap.get(key);
+                    if (value != null) {
+                        ctr++;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("Error: " + e);
+        }
+        entTime = System.nanoTime();
+        totalTime = (entTime - startTime) / 1000L;
+        this.results.put(hashmap.getClass().toString() + "/getByOne", new Object[]{totalTime, "NA", "NA", ctr});
+        System.out.println("Executed in in " + totalTime + " us \n***********************\n");
+    }
+
+    // Method to remove elements of the hashmap with random keys
+    public void removeByOne_Benchmark(Object hashmap) {
+        long finalLen = 0, initialLen = 0;
+        System.out.println("Starting: Removing By One: " + hashmap.getClass().toString());
+        int ctr = 0;
+        startTime = System.nanoTime();
+        try {
+            if (hashmap instanceof ConcurrentHash) {
+                ConcurrentHash hashMap = (ConcurrentHash) hashmap;
+                initialLen = hashMap.getSize();
+                for (int i = 0; i < NUMBER_OF_QUERIES; i++) {
+                    Object key = (long) (Math.random() * NUMBER_OF_ELEMENTS);
+                    Object value = hashMap.remove(key);
+                    if (value != null) {
+                        ctr++;
+                    }                    
+                }
+                finalLen = hashMap.getSize();
+            }
+            if (hashmap instanceof IdentityHash) {
+                IdentityHash hashMap = (IdentityHash) hashmap;
+                initialLen = hashMap.getSize();
+                for (int i = 0; i < NUMBER_OF_QUERIES; i++) {
+                    Object key = (long) (Math.random() * NUMBER_OF_ELEMENTS);
+                    Object value = hashMap.remove(key);
+                    if (value != null) {
+                        ctr++;
+                    }                    
+                }
+                finalLen = hashMap.getSize();
+            }
+            if (hashmap instanceof WeakHash) {
+                WeakHash hashMap = (WeakHash) hashmap;
+                initialLen = hashMap.getSize();
+                for (int i = 0; i < NUMBER_OF_QUERIES; i++) {
+                    Object key = (long) (Math.random() * NUMBER_OF_ELEMENTS);
+                    Object value = hashMap.remove(key);
+                    if (value != null) {
+                        ctr++;
+                    }                    
+                }
+                finalLen = hashMap.getSize();
+            }
+        } catch (Exception e) {
+            System.out.println("Error: " + e);
+        }
+        entTime = System.nanoTime();
+        totalTime = (entTime - startTime) / 1000L;
+        this.results.put(hashmap.getClass().toString() + "/removeByOne", new Object[]{totalTime, initialLen,  finalLen, ctr});
+        System.out.println("Executed in in " + totalTime + " us \n***********************\n");
+    }
+
+    // Method to remove a percentage of elements of the hashmap
+    public void removeByPercentage_Benchmark(Object hashmap, int p) {
+        long finalLen = 0, initialLen = 0;
+        System.out.println("Starting: Removing By Percentage: " + hashmap.getClass().toString());
+        startTime = System.nanoTime();
+        try {
+            if (p >= 0 && p <= 100) {
+                if (hashmap instanceof ConcurrentHash) {
+                    ConcurrentHash hashMap = (ConcurrentHash) hashmap;
+                    initialLen = hashMap.getSize();
+                    for (int i = 0; i < initialLen * p / 100; i++) {
+                        hashMap.removeMax_Random();
+                    }
+                    finalLen = hashMap.getSize();
+                }
+
+                if (hashmap instanceof IdentityHash) {
+                    IdentityHash hashMap = (IdentityHash) hashmap;
+                    initialLen = hashMap.getSize();
+                    for (int i = 0; i < initialLen * p / 100; i++) {
+                        hashMap.removeMax_Random();
+                    }
+                    finalLen = hashMap.getSize();
+                }
+                if (hashmap instanceof WeakHash) {
+                    WeakHash hashMap = (WeakHash) hashmap;
+                    initialLen = hashMap.getSize();
+                    for (int i = 0; i < initialLen * p / 100; i++) {
+                        hashMap.removeMax_Random();
+                    }
+                    finalLen = hashMap.getSize();
+                }
+            } else {
+                throw new IllegalArgumentException("Percentage must be between 0 and 100");
+            }
+        } catch (Exception e) {
+            System.out.println("Error: " + e);
+        }
+        entTime = System.nanoTime();
+        totalTime = (entTime - startTime) / 1000000L;
+        this.results.put(hashmap.getClass().toString() + "/removeByPercentage", new Object[]{totalTime, initialLen, finalLen, "NA"});
+        System.out.println("Executed in in " + totalTime + " ms \n***********************\n");
+    }
+
+    public void printResults() {
+        System.out.println("Data configuration: "
+                + "\n * Number of elements by HashMap: " + NUMBER_OF_ELEMENTS
+                + "\n * Number of queries: " + NUMBER_OF_QUERIES
+                + "\n");
+        for (String key : this.results.keySet()) {
+            String unit = "ms";
+            if(key.contains("get") || key.contains("removeByOne")){
+                unit = "us";
+            }
+            System.out.println(key.split("\\.")[1] + ":\n"
+                    + "* Time: " + this.results.get(key)[0] + " "+unit+".  -  "
+                    + "* Initial Size: " + this.results.get(key)[1] + "  -  "
+                    + "* Final Size: " + this.results.get(key)[2] + "  -  "
+                    + "* No. Matchs: " + this.results.get(key)[3]);
+        }
+    }
+}
