@@ -11,7 +11,7 @@ public class FirstTest {
     // General configuration
     // NUMBER_OF_ELEMENTS: The quantity of elements to generate randomly and put in the hashmap.
     // numberOfQueries: The quantity of queries that getByOne_Benchmark and removeByOne_Benchmark functions execute with randomly keys.
-    static final long NUMBER_OF_ELEMENTS = 100000;
+    static final long NUMBER_OF_ELEMENTS = 1000;
     private int numberOfQueries = 100;
 
     // Specific Configuration 
@@ -20,13 +20,13 @@ public class FirstTest {
     // XX_REDUNDANCY: The number of tries that the set_Benchmark should attemp to add a key/value if this already exists
     // XX_REMOVE_PER: The percentage of elements to remove accoriding to the hashmap object size (not the XX_MAXLENGTH)
     //                The value should be between 0 and 100
-    static final long CH_MAX_LENGTH = 1000;
+    static final long CH_MAX_LENGTH = 100;
     static final int CH_REDUNDANCY = 0;
     static final int CH_REMOVE_PER = 0;
-    static final long TH_MAX_LENGTH = 1000;
+    static final long TH_MAX_LENGTH = 100;
     static final int TH_REDUNDANCY = 0;
     static final int TH_REMOVE_PER = 0;
-    static final long LH_MAX_LENGTH =1000;
+    static final long LH_MAX_LENGTH =100;
     static final int LH_REDUNDANCY = 0;
     static final int LH_REMOVE_PER = 0;
 
