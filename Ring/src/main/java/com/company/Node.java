@@ -27,10 +27,10 @@ public class Node implements SimpleKV {
 
     @Override
     public void put(Object k, Object v) {
-        if(value.size() > this.max_size){
+        if(value.size() >= this.max_size){
             removeMax_Random();
         }
-        value.put(Integer.valueOf(String.valueOf(k)), String.valueOf(v));
+        this.value.put(Integer.valueOf(String.valueOf(k)), String.valueOf(v));
     }
 
     @Override
@@ -45,9 +45,10 @@ public class Node implements SimpleKV {
         HttpResponse<String> response = Unirest.get("http://127.0.0.1:"+7000+"/add/{port}")
                 .routeParam("port", string_port)
                 .asString();
-        if(response.getStatus() == 200)
+        if(response.getStatus() == 200) {
             position = Integer.valueOf(response.getBody());
-        System.out.println(response.getBody());
+            System.out.println("Node "+position+" added to ring. Port: "+ string_port);
+        }
         return position;
     }
 
@@ -56,13 +57,16 @@ public class Node implements SimpleKV {
         Object[] keys = this.value.keySet().toArray();
         Object key = keys[r.nextInt(keys.length)];
         this.value.remove(key);
+        System.out.println("!!! Eviction policy applied: Cache evicted "+key+" key");
     }
 
-    public void addHit(){
+    public void addHit(int pos, int port){
+        System.out.println("+++ Cache hit in node:"+ pos+", port:"+port);
         this.log.put("hit", this.log.get("hit") + 1);
     }
 
-    public void addMiss(){
+    public void addMiss(int pos, int port){
+        System.out.println("--- Cache miss in node:"+ pos+", port:"+port);
         this.log.put("miss", this.log.get("miss") + 1);
     }
 
@@ -70,12 +74,19 @@ public class Node implements SimpleKV {
         return this.log;
     }
 
-    public void temporal(Object k, Object v, int next_node){
-        HttpResponse<JsonNode> response = Unirest.post("http://127.0.0.1:"+next_node+"/")
-                .header("accept", "application/json")
-                .field("key", k)
-                .field("value", "bar")
-                .asJson();
-        System.out.println(response);
+    public TreeMap<Integer, String> getCache(){
+        return this.value;
+    }
+
+    public void requestNextNode(Object k, Object v, int next_node){
+        Unirest.post("http://127.0.0.1:"+next_node+"/")
+                .body("{\"key\":\""+ String.valueOf(k)+"\", \"value\":\""+String.valueOf(v)+"\"}")
+                .asString();
+    }
+
+    public void getNextNode(Object k, int next_node){
+        HttpResponse<String> response =  Unirest.get("http://127.0.0.1:"+ next_node +"/{key}")
+                .routeParam("key", String.valueOf(k))
+                .asString();
     }
 }
